@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Pre-commit guard: blocks private data and secrets from reaching the public repo.
+# Install once per clone:  git config core.hooksPath scripts/git-hooks
+# This is a safety net, not a substitute for the manual review in CLAUDE.md.
+set -euo pipefail
+
+fail=0
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$staged" ] && exit 0
+
+# 1. Forbidden paths and file types
+while IFS= read -r f; do
+  case "$f" in
+    private/*|data/*|*.tfstate|*.tfstate.*|*terraform.tfvars|*/backend.tf|.env|.env.*|*.pem|*.key|*TidepoolExport*|*export.xml)
+      [ "$f" = ".env.example" ] && continue
+      echo "BLOCKED path: $f"; fail=1 ;;
+  esac
+  # Real data files are big; synthetic fixtures should stay small.
+  if [ -f "$f" ] && [ "$(wc -c < "$f")" -gt 1048576 ]; then
+    echo "BLOCKED size >1MB (real export?): $f"; fail=1
+  fi
+done <<< "$staged"
+
+# 2. Content patterns: device serials, tokens, keys
+patterns='twiist_[0-9]{6,}|AKIA[0-9A-Z]{16}|dapi[0-9a-f]{32}|x-tidepool-session-token: *[A-Za-z0-9]|-----BEGIN [A-Z ]*PRIVATE KEY-----'
+hits=$(git diff --cached -U0 --diff-filter=ACMR -- . ':(exclude)scripts/git-hooks/*' \
+       | grep -E '^\+' | grep -nE "$patterns" || true)
+if [ -n "$hits" ]; then
+  echo "BLOCKED content matching identifier/secret patterns:"; echo "$hits" | head -20; fail=1
+fi
+
+if [ "$fail" -ne 0 ]; then
+  echo
+  echo "Commit refused. Move the item to private/ or remove it, then re-stage."
+  echo "Bypassing with --no-verify requires an explicit manual review (see CLAUDE.md)."
+  exit 1
+fi

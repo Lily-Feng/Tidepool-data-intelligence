@@ -1,0 +1,46 @@
+# ── Private: never committed ─────────────────────────────────────────────
+# Everything not meant for the public repo lives in private/.
+# See CLAUDE.md → "Public / private boundary".
+private/
+
+# Real health data, wherever it ends up by accident
+data/
+*.ndjson
+*.ndjson.gz
+TidepoolExport*
+export.xml
+export_cda.xml
+apple_health_export/
+HealthAutoExport*
+
+# Secrets and local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.databrickscfg
+
+# Terraform state, real vars, real backends, provider binaries
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+terraform.tfvars
+backend.tf
+crash.log
+
+# Databricks bundle local state
+.databricks/
+
+# Python / Node / OS noise
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+node_modules/
+dist/
+build/
+.DS_Store
+.ipynb_checkpoints/

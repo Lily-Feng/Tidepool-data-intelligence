@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TideTrack Studio</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 0; background: #f6fbff; color: #0d1b2a; }
+    .page { max-width: 860px; margin: auto; padding: 32px; }
+    h1 { margin-bottom: 0.25rem; }
+    p { line-height: 1.7; }
+    .cards { display: grid; gap: 16px; margin-top: 24px; }
+    .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 18px 40px rgba(15,23,42,0.08); }
+    .card h2 { margin-top: 0; }
+    a { color: #0057b8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>TideTrack Studio</h1>
+    <p>A privacy-first personal analytics toolkit for Tidepool data, built around private raw storage, governed lakehouse tables, and synthetic public examples.</p>
+
+    <div class="cards">
+      <div class="card">
+        <h2>What it does</h2>
+        <ul>
+          <li>Preserves authorized Tidepool data in private Amazon S3 storage</li>
+          <li>Transforms it in governed Databricks and Unity Catalog tables</li>
+          <li>Visualizes approved Gold metrics in a read-only Databricks App</li>
+          <li>Publishes docs on GitHub Pages</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Get started</h2>
+        <p>Open <code>README.md</code>, then follow the implementation specifications in <code>docs/v1/</code>.</p>
+      </div>
+
+      <div class="card">
+        <h2>Security first</h2>
+        <p>Keep credentials and real health data out of GitHub and free/public analytics environments. Public examples use synthetic data only.</p>
+      </div>
+    </div>
+
+    <p>Want the secure ingestion and dashboard plan? Start with <code>docs/v1/README.md</code>.</p>
+  </div>
+</body>
+</html>
