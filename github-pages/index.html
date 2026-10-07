@@ -3,47 +3,511 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TideTrack Studio</title>
+  <title>Tidepool Data Intelligence</title>
+  <meta name="description" content="Private, open-source analytics for people living with type 1 diabetes: your pump and CGM data from Tidepool, in a workspace only you control." />
   <style>
-    body { font-family: system-ui, sans-serif; margin: 0; padding: 0; background: #f6fbff; color: #0d1b2a; }
-    .page { max-width: 860px; margin: auto; padding: 32px; }
-    h1 { margin-bottom: 0.25rem; }
-    p { line-height: 1.7; }
-    .cards { display: grid; gap: 16px; margin-top: 24px; }
-    .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 18px 40px rgba(15,23,42,0.08); }
-    .card h2 { margin-top: 0; }
-    a { color: #0057b8; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    /* No external fonts, scripts or trackers: this page loads nothing from third parties. */
+    :root {
+      --bg: #f7f9fb;
+      --surface: #ffffff;
+      --surface-2: #eef3f7;
+      --text: #14212e;
+      --muted: #52606d;
+      --border: #dde4ea;
+      --accent: #0b6e8a;
+      --accent-soft: #e0f1f6;
+      --in-range: #2e9e6b;
+      --below: #d64545;
+      --above: #e3a52b;
+      --layer: #e2462f;
+      --shadow: 0 1px 2px rgba(20, 33, 46, 0.04), 0 12px 32px rgba(20, 33, 46, 0.08);
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0f161d; --surface: #16202a; --surface-2: #1c2834; --text: #e6edf3; --muted: #9aa8b5;
+        --border: #2a3846; --accent: #5cc3df; --accent-soft: #173543; --in-range: #4cc28d;
+        --below: #f07171; --above: #f0c05a; --layer: #f26b55; --shadow: none; color-scheme: dark;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0f161d; --surface: #16202a; --surface-2: #1c2834; --text: #e6edf3; --muted: #9aa8b5;
+      --border: #2a3846; --accent: #5cc3df; --accent-soft: #173543; --in-range: #4cc28d;
+      --below: #f07171; --above: #f0c05a; --layer: #f26b55; --shadow: none; color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+    }
+    a { color: var(--accent); text-underline-offset: 3px; }
+    button { font: inherit; color: inherit; cursor: pointer; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.86em;
+      background: var(--surface-2);
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+    }
+    .wrap { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+
+    header { padding: 16px 0 0; }
+    header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .brand { font-weight: 700; font-size: 1.02rem; letter-spacing: -0.01em; }
+    .brand span { color: var(--accent); }
+    .tag { font-size: 0.75rem; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+
+    main { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 12px 0; }
+    .intro { text-align: center; max-width: 720px; margin: 0 auto; }
+    .eyebrow { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+    h1 { font-size: clamp(1.6rem, 3.6vw, 2.4rem); line-height: 1.2; letter-spacing: -0.02em; margin: 0.35rem 0 0.5rem; }
+    .lede { color: var(--muted); margin: 0; font-size: 1.02rem; }
+
+    /* Illustration with hotspots */
+    .stage {
+      position: relative;
+      margin: 16px auto 0;
+      max-width: min(1040px, calc((100dvh - 330px) * 3));
+      min-width: min(100%, 560px);
+      background: #fbfbfb;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    /* The image has wide empty bands top and bottom; crop them with negative margins. */
+    .canvas { position: relative; margin: -9% 0 -7.5%; }
+    .canvas-spots { position: absolute; inset: 0; }
+    .stage img { display: block; width: 100%; height: auto; }
+    .hotspot {
+      position: absolute;
+      background: transparent;
+      border: 2px solid transparent;
+      border-radius: 14px;
+      padding: 0;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .hotspot:hover, .hotspot:focus-visible { border-color: #0b6e8a; background: rgba(11, 110, 138, 0.06); outline: none; }
+    .badge {
+      position: absolute;
+      top: -2px;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: #0b6e8a;
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      line-height: 26px;
+      text-align: center;
+      box-shadow: 0 0 0 0 rgba(11, 110, 138, 0.5);
+      animation: pulse 2.4s infinite;
+    }
+    .link-dot {
+      position: absolute;
+      width: 30px; height: 30px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 2px solid #0b6e8a;
+      background: #ffffff;
+      color: #0b6e8a;
+      font-weight: 700;
+      font-size: 0.9rem;
+      line-height: 1;
+      padding: 0;
+      transition: transform 0.15s;
+    }
+    .link-dot:hover, .link-dot:focus-visible { transform: translate(-50%, -50%) scale(1.15); outline: none; background: #e0f1f6; }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(11, 110, 138, 0.45); }
+      70% { box-shadow: 0 0 0 10px rgba(11, 110, 138, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(11, 110, 138, 0); }
+    }
+    @media (prefers-reduced-motion: reduce) { .badge { animation: none; } }
+    .hint { text-align: center; font-size: 0.85rem; color: var(--muted); margin: 10px 0 0; }
+
+    /* Topic chips */
+    .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }
+    .chip {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    .chip:hover, .chip:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+    .chip.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 600; }
+    .chip.primary:hover { color: var(--bg); opacity: 0.9; }
+
+    footer { padding: 10px 0 16px; font-size: 0.78rem; color: var(--muted); text-align: center; }
+    footer p { margin: 0; }
+
+    /* Popup */
+    dialog {
+      width: min(640px, calc(100vw - 32px));
+      max-height: min(80dvh, 720px);
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+    }
+    dialog::backdrop { background: rgba(10, 18, 26, 0.45); backdrop-filter: blur(2px); }
+    .dlg { display: flex; flex-direction: column; max-height: min(80dvh, 720px); }
+    .dlg-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 20px 20px 0; }
+    .dlg-head h2 { margin: 0.2rem 0 0; font-size: 1.3rem; line-height: 1.25; }
+    .close { border: none; background: var(--surface-2); border-radius: 50%; width: 32px; height: 32px; font-size: 1.1rem; line-height: 1; flex-shrink: 0; }
+    .dlg-body { padding: 12px 20px 8px; overflow-y: auto; }
+    .dlg-body p { margin: 0 0 0.85rem; }
+    .dlg-body h3 { font-size: 0.95rem; margin: 1rem 0 0.4rem; }
+    .dlg-body ul { margin: 0 0 0.85rem; padding-left: 1.2rem; }
+    .dlg-body li { margin-bottom: 0.3rem; }
+    .dlg-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 20px 16px; border-top: 1px solid var(--border); }
+    .nav-btn { border: 1px solid var(--border); background: var(--surface); border-radius: 8px; padding: 6px 12px; font-size: 0.88rem; }
+    .nav-btn:disabled { opacity: 0.35; cursor: default; }
+    .dots { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
+    .dots button { width: 8px; height: 8px; border-radius: 50%; border: none; padding: 0; background: var(--border); }
+    .dots button[aria-current="true"] { background: var(--accent); }
+
+    .note { background: var(--accent-soft); border-radius: 10px; padding: 10px 14px; font-size: 0.9rem; }
+    .grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 0.85rem; }
+    .mini { background: var(--surface-2); border-radius: 10px; padding: 12px 14px; font-size: 0.9rem; }
+    .mini b { display: block; margin-bottom: 2px; }
+    .mini span { color: var(--muted); }
+    .layers { list-style: none; padding: 0 !important; margin: 0 0 0.85rem; display: grid; gap: 8px; }
+    .layers li { border-left: 4px solid var(--layer); background: var(--surface-2); border-radius: 0 10px 10px 0; padding: 8px 12px; font-size: 0.9rem; margin: 0 !important; }
+    .layers b { display: block; }
+    .layers span { color: var(--muted); }
+    .checks { list-style: none; padding: 0 !important; }
+    .checks li { padding-left: 24px; position: relative; }
+    .checks li::before { content: "✓"; position: absolute; left: 2px; color: var(--in-range); font-weight: 700; }
+    .checks.no li::before { content: "✕"; color: var(--below); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-bottom: 0.85rem; }
+    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+    .status { font-size: 0.74rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+    .status.built { background: var(--accent-soft); color: var(--accent); }
+    .status.planned { background: var(--surface-2); color: var(--muted); }
+    .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; }
+    .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; background: var(--swatch); }
+    .tir-chart { width: 100%; height: auto; display: block; }
+    .tir-chart text { fill: var(--muted); font-size: 11px; font-family: inherit; }
+    .small { font-size: 0.8rem; color: var(--muted); }
+
+    @media (max-width: 640px) {
+      .stage { min-width: 0; }
+      .badge { width: 22px; height: 22px; line-height: 22px; font-size: 0.7rem; }
+      .link-dot { width: 24px; height: 24px; font-size: 0.8rem; }
+      .tag { display: none; }
+    }
   </style>
 </head>
 <body>
-  <div class="page">
-    <h1>TideTrack Studio</h1>
-    <p>A privacy-first personal analytics toolkit for Tidepool data, built around private raw storage, governed lakehouse tables, and synthetic public examples.</p>
+  <header>
+    <div class="wrap">
+      <div class="brand">Tidepool Data <span>Intelligence</span></div>
+      <div class="tag">Open source · Stage 1 · Not medical advice</div>
+    </div>
+  </header>
 
-    <div class="cards">
-      <div class="card">
-        <h2>What it does</h2>
-        <ul>
-          <li>Preserves authorized Tidepool data in private Amazon S3 storage</li>
-          <li>Transforms it in governed Databricks and Unity Catalog tables</li>
-          <li>Visualizes approved Gold metrics in a read-only Databricks App</li>
-          <li>Publishes docs on GitHub Pages</li>
-        </ul>
+  <main>
+    <div class="wrap">
+      <div class="intro">
+        <div class="eyebrow">For people living with type 1 diabetes</div>
+        <h1>Your pump data, understood privately.</h1>
+        <p class="lede">Move your pump and CGM history from Tidepool into a workspace only you control, and see the patterns behind your days.</p>
       </div>
 
-      <div class="card">
-        <h2>Get started</h2>
-        <p>Open <code>README.md</code>, then follow the implementation specifications in <code>docs/v1/</code>.</p>
+      <div class="stage">
+        <div class="canvas">
+        <img src="assets/data-flow.png" width="1200" height="600"
+             alt="Data flow: a twiist pump sends data to Tidepool, then to Databricks, then to a personal analysis dashboard." />
+        <div class="canvas-spots">
+        <button class="hotspot" data-topic="pump" style="left:1.5%; top:25%; width:19.5%; height:52%;" aria-label="Pump data: what your pump and CGM record"><span class="badge">1</span></button>
+        <button class="link-dot" data-topic="sync" style="left:27%; top:40%;" aria-label="How pump data reaches Tidepool">→</button>
+        <button class="hotspot" data-topic="tidepool" style="left:29%; top:38%; width:21.5%; height:39%;" aria-label="Tidepool: where your device data is collected"><span class="badge">2</span></button>
+        <button class="link-dot" data-topic="ingest" style="left:52.5%; top:40%;" aria-label="How data moves from Tidepool to your workspace">→</button>
+        <button class="hotspot" data-topic="databricks" style="left:55%; top:33%; width:13.5%; height:44%;" aria-label="Databricks: your private workspace and pipeline"><span class="badge">3</span></button>
+        <button class="link-dot" data-topic="serve" style="left:73.5%; top:40%;" aria-label="What the dashboard is allowed to see">→</button>
+        <button class="hotspot" data-topic="analysis" style="left:77%; top:32%; width:21%; height:45%;" aria-label="Personal analysis: your dashboard"><span class="badge">4</span></button>
+        </div>
+        </div>
       </div>
+      <p class="hint">Tap a numbered step or an arrow to see what happens there.</p>
 
-      <div class="card">
-        <h2>Security first</h2>
-        <p>Keep credentials and real health data out of GitHub and free/public analytics environments. Public examples use synthetic data only.</p>
+      <div class="chips">
+        <button class="chip primary" data-topic="pump">▶ Walk me through it</button>
+        <button class="chip" data-topic="insights">What can I learn?</button>
+        <button class="chip" data-topic="privacy">Is my data private?</button>
+        <button class="chip" data-topic="extend">Can I add more data?</button>
+        <button class="chip" data-topic="limits">What it won't do</button>
+        <button class="chip" data-topic="start">Get started</button>
       </div>
     </div>
+  </main>
 
-    <p>Want the secure ingestion and dashboard plan? Start with <code>docs/v1/README.md</code>.</p>
-  </div>
+  <footer>
+    <div class="wrap">
+      <p><strong>Informational personal analytics only. Not medical advice or a dosing recommendation.</strong><br />
+        An independent open-source project, not affiliated with or endorsed by Tidepool, the maker of twiist, or Databricks.</p>
+    </div>
+  </footer>
+
+  <dialog id="popup" aria-labelledby="dlg-title">
+    <div class="dlg">
+      <div class="dlg-head">
+        <div>
+          <div class="eyebrow" id="dlg-eyebrow"></div>
+          <h2 id="dlg-title"></h2>
+        </div>
+        <button class="close" id="dlg-close" aria-label="Close">×</button>
+      </div>
+      <div class="dlg-body" id="dlg-body"></div>
+      <div class="dlg-foot">
+        <button class="nav-btn" id="dlg-prev">← Back</button>
+        <div class="dots" id="dlg-dots"></div>
+        <button class="nav-btn" id="dlg-next">Next →</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    // Popups, in walkthrough order.
+    const topics = [
+      {
+        id: "pump", eyebrow: "Step 1 · Pump data", title: "Your pump and CGM already record everything",
+        body: `
+          <p>Every day, your devices log hundreds of data points about your diabetes. Most of it sits in an app you scroll through and then forget.</p>
+          <div class="grid">
+            <div class="mini"><b>Glucose</b><span>A CGM reading every 5 minutes, which is 288 a day.</span></div>
+            <div class="mini"><b>Basal</b><span>The background insulin your pump delivers, including automated adjustments.</span></div>
+            <div class="mini"><b>Boluses &amp; carbs</b><span>Every meal and correction bolus, and the carbs you entered.</span></div>
+            <div class="mini"><b>Device events</b><span>Site changes, reservoir fills and your pump settings over time.</span></div>
+          </div>
+          <p>Months of this history can answer questions a single day can't.</p>`
+      },
+      {
+        id: "sync", eyebrow: "Pump → Tidepool", title: "Your data reaches your Tidepool account",
+        body: `
+          <p>Your twiist data is uploaded to your own Tidepool account, so pump and CGM history ends up in one place.</p>
+          <p>Nothing about this step changes. Tidepool Data Intelligence doesn't touch your pump or how it syncs.</p>
+          <div class="note">It never sends anything back to your pump or to Tidepool. It reads your history and nothing more.</div>`
+      },
+      {
+        id: "tidepool", eyebrow: "Step 2 · Tidepool", title: "Tidepool: your device data in one place",
+        body: `
+          <p><a href="https://www.tidepool.org/" rel="noopener">Tidepool</a> is a nonprofit platform that brings data from diabetes devices into one account. You and your care team may already use it to review your numbers.</p>
+          <p>Tidepool lets you <b>export</b> your full history. That export is where this project starts.</p>
+          <h3>Why not just use Tidepool's views?</h3>
+          <p>Keep using them. This project adds a long-term copy you can query in your own way: joining glucose with sleep or workouts, comparing settings periods, or asking questions in plain English.</p>`
+      },
+      {
+        id: "ingest", eyebrow: "Tidepool → your workspace", title: "Your computer carries the data, not ours",
+        body: `
+          <p>A small script runs on your own Mac:</p>
+          <ul>
+            <li>It reads your Tidepool export (later, a daily pull through Tidepool's API, with your login kept in macOS Keychain).</li>
+            <li>It packages the data with a checksum and a record count, so nothing gets silently lost.</li>
+            <li>It uploads straight to storage in <b>your</b> Databricks workspace.</li>
+          </ul>
+          <div class="note">There is no Tidepool Data Intelligence server or account. Your data never passes through this project. The original export also stays on your encrypted Mac as a backup.</div>`
+      },
+      {
+        id: "databricks", eyebrow: "Step 3 · Databricks", title: "A private workspace that cleans and organizes your data",
+        body: `
+          <p>Your data lands in your own <a href="https://www.databricks.com/learn/free-edition" rel="noopener">Databricks Free Edition</a> workspace, where an automatic pipeline organizes it in layers, like the stack in the picture:</p>
+          <ul class="layers">
+            <li><b>Raw</b><span>Every record exactly as received, so everything can be rebuilt from it.</span></li>
+            <li><b>Curated</b><span>Duplicates removed, units fixed, and device serials, upload IDs and notes stripped out.</span></li>
+            <li><b>Analytics</b><span>Daily time in range, variability, insulin totals and a 5-minute timeline.</span></li>
+            <li><b>Checks</b><span>Counts that confirm every record arrived, with no glucose values in them.</span></li>
+          </ul>
+          <p>The pipeline runs when a new export arrives. Loading the same data twice, or overlapping date ranges, never creates duplicates.</p>`
+      },
+      {
+        id: "serve", eyebrow: "Workspace → dashboard", title: "The dashboard only sees what it needs",
+        body: `
+          <p>The dashboard and the AI assistant (planned) are pointed only at the analytics layer: daily summaries and the cleaned timeline.</p>
+          <p>They can't see raw records or identifiers. Missing CGM time shows as a gap and is never filled in with guesses.</p>`
+      },
+      {
+        id: "analysis", eyebrow: "Step 4 · Personal analysis", title: "See your days, weeks and months",
+        chart: true,
+        body: `
+          <div class="legend">
+            <span style="--swatch: var(--below)">Below 70</span>
+            <span style="--swatch: var(--in-range)">70–180 (in range)</span>
+            <span style="--swatch: var(--above)">Above 180</span>
+          </div>
+          <svg class="tir-chart" viewBox="0 0 640 190" role="img" aria-label="Stacked bars of daily time below, in and above range over 14 days, synthetic data"></svg>
+          <p class="small">Illustration with synthetic data. No real person's readings appear on this site.</p>
+          <div class="grid">
+            <div class="mini"><b>Time in range</b><span>% of readings 70–180 mg/dL. Consensus target: above 70%.</span></div>
+            <div class="mini"><b>Time below range</b><span>% below 70 mg/dL. Consensus target: under 4%.</span></div>
+            <div class="mini"><b>Variability (CV)</b><span>How much glucose swings. Consensus target: 36% or lower.</span></div>
+            <div class="mini"><b>GMI &amp; coverage</b><span>An A1c-like estimate, and how many of the day's 288 readings arrived.</span></div>
+          </div>
+          <p class="small">Targets are labeled as published consensus targets, not as advice for you.</p>`
+      },
+      {
+        id: "insights", eyebrow: "Insights", title: "Questions your data can answer",
+        body: `
+          <div class="grid">
+            <div class="mini"><b>"Why was last night so rough?"</b><span>A 5-minute timeline of glucose, basal, boluses and carbs for any night.</span></div>
+            <div class="mini"><b>"What moves my time in range?"</b><span>Daily numbers next to each day's context: weekday, site age, overrides.</span></div>
+            <div class="mini"><b>"Did the change my care team and I made help?"</b><span>Pump settings as dated periods, compared before and after.</span></div>
+            <div class="mini"><b>"Do workouts or bad sleep change my next day?"</b><span>Glucose after exercise, and sleep joined to the next day (with Apple Health).</span></div>
+          </div>
+          <p>Every AI-written insight (planned) describes what happened, cites the days behind it, and suggests talking with your care team before changing anything.</p>`
+      },
+      {
+        id: "privacy", eyebrow: "Privacy", title: "Your health data stays yours",
+        body: `
+          <ul class="checks">
+            <li><b>Nothing passes through this project.</b> The code is public. Your data goes from your Mac to your workspace and nowhere else.</li>
+            <li><b>Identifiers removed early.</b> Serial numbers, upload IDs and free-text notes are dropped before anything you look at.</li>
+            <li><b>Logins stay in your keychain.</b> Tokens live in macOS Keychain or your workspace's secret store, never in code or logs.</li>
+            <li><b>Logs hold counts, not health values.</b></li>
+            <li><b>This site uses synthetic data only.</b> It loads no trackers, fonts or scripts from anyone else.</li>
+          </ul>`
+      },
+      {
+        id: "extend", eyebrow: "Extending", title: "Start with your pump. Add the rest of your life later.",
+        body: `
+          <p>Glucose responds to more than insulin and carbs. Data is organized by <em>what it describes</em> (a glucose reading, a sleep session, a lab result), so a new source plugs into the same timeline and daily views.</p>
+          <table>
+            <thead><tr><th>Source</th><th>Adds</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>Tidepool export</td><td>CGM, basal, bolus, carbs, site changes, settings history</td><td><span class="status built">Built</span></td></tr>
+              <tr><td>Tidepool API</td><td>The same data, refreshed daily</td><td><span class="status planned">Planned</span></td></tr>
+              <tr><td>Apple Health</td><td>Sleep, heart rate, HRV, workouts, steps (no location)</td><td><span class="status planned">Planned</span></td></tr>
+              <tr><td>Lab results</td><td>A1c and panels, compared with your CGM estimate</td><td><span class="status planned">Planned</span></td></tr>
+              <tr><td>AI questions</td><td>Plain-English questions and a weekly written summary</td><td><span class="status planned">Planned</span></td></tr>
+            </tbody>
+          </table>
+          <p class="small">Using another pump that uploads to Tidepool? Tidepool's data model is shared across devices, so much of the pipeline should carry over.</p>`
+      },
+      {
+        id: "limits", eyebrow: "Boundaries", title: "What it is, and what it isn't",
+        body: `
+          <div class="grid">
+            <div>
+              <h3>It is</h3>
+              <ul class="checks">
+                <li>A look back at your own history</li>
+                <li>Standard metrics with targets clearly labeled</li>
+                <li>Something to bring to your care team</li>
+                <li>Open source, so anyone can check it</li>
+              </ul>
+            </div>
+            <div>
+              <h3>It isn't</h3>
+              <ul class="checks no">
+                <li>A dosing calculator or settings advisor</li>
+                <li>A real-time monitor or alarm</li>
+                <li>A replacement for your pump app, Tidepool or your care team</li>
+                <li>A medical device</li>
+              </ul>
+            </div>
+          </div>`
+      },
+      {
+        id: "start", eyebrow: "Get started", title: "Try it with synthetic data first",
+        body: `
+          <p>The project is in early development. You'll need some comfort with the command line and a free Databricks workspace for personal use.</p>
+          <ul class="layers">
+            <li><b>1. Deploy</b><span>Create the storage and pipeline in your workspace with <code>databricks bundle deploy</code>.</span></li>
+            <li><b>2. Load synthetic data</b><span>Generate two weeks of made-up pump and CGM data and upload it with the ingest script.</span></li>
+            <li><b>3. Switch to yours</b><span>Export from Tidepool, keep the file in a git-ignored folder, and run the same steps.</span></li>
+          </ul>`
+      },
+    ];
+
+    const dialog = document.getElementById("popup");
+    const $ = (id) => document.getElementById(id);
+    let current = 0;
+
+    topics.forEach((t, i) => {
+      const dot = document.createElement("button");
+      dot.setAttribute("aria-label", t.title);
+      dot.addEventListener("click", () => show(i));
+      $("dlg-dots").appendChild(dot);
+    });
+
+    function show(i) {
+      current = i;
+      const t = topics[i];
+      $("dlg-eyebrow").textContent = t.eyebrow;
+      $("dlg-title").textContent = t.title;
+      $("dlg-body").innerHTML = t.body;
+      $("dlg-body").scrollTop = 0;
+      $("dlg-prev").disabled = i === 0;
+      $("dlg-next").textContent = i === topics.length - 1 ? "Done" : "Next →";
+      [...$("dlg-dots").children].forEach((d, j) => d.setAttribute("aria-current", j === i));
+      if (t.chart) drawChart($("dlg-body").querySelector(".tir-chart"));
+      if (!dialog.open) dialog.showModal();
+    }
+
+    document.querySelectorAll("[data-topic]").forEach((el) => {
+      el.addEventListener("click", () => show(topics.findIndex((t) => t.id === el.dataset.topic)));
+    });
+    $("dlg-close").addEventListener("click", () => dialog.close());
+    $("dlg-prev").addEventListener("click", () => current > 0 && show(current - 1));
+    $("dlg-next").addEventListener("click", () => current < topics.length - 1 ? show(current + 1) : dialog.close());
+    dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); });
+    dialog.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" && current < topics.length - 1) show(current + 1);
+      if (e.key === "ArrowLeft" && current > 0) show(current - 1);
+    });
+
+    // Synthetic illustration only: hand-made percentages, not derived from any real record.
+    const days = [
+      [3, 68, 29], [1, 74, 25], [5, 71, 24], [2, 62, 36], [1, 78, 21], [4, 70, 26], [2, 81, 17],
+      [6, 64, 30], [2, 73, 25], [1, 76, 23], [3, 69, 28], [2, 79, 19], [1, 83, 16], [3, 75, 22],
+    ];
+    function drawChart(svg) {
+      const ns = "http://www.w3.org/2000/svg";
+      const left = 34, right = 8, top = 8, bottom = 24;
+      const width = 640 - left - right, height = 190 - top - bottom;
+      const slot = width / days.length, barW = slot * 0.68;
+      const el = (name, attrs) => {
+        const node = document.createElementNS(ns, name);
+        for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+        svg.appendChild(node);
+        return node;
+      };
+      [0, 50, 100].forEach((pct) => {
+        const y = top + height * (1 - pct / 100);
+        el("line", { x1: left, x2: left + width, y1: y, y2: y, stroke: "var(--border)", "stroke-width": 1 });
+        el("text", { x: left - 6, y: y + 4, "text-anchor": "end" }).textContent = pct + "%";
+      });
+      days.forEach(([below, inRange, above], i) => {
+        const x = left + i * slot + (slot - barW) / 2;
+        let y = top + height;
+        [[below, "var(--below)"], [inRange, "var(--in-range)"], [above, "var(--above)"]].forEach(([pct, color]) => {
+          const h = height * pct / 100;
+          y -= h;
+          const rect = el("rect", { x, y, width: barW, height: Math.max(h - 1, 0), fill: color, rx: 2 });
+          const title = document.createElementNS(ns, "title");
+          title.textContent = `Day ${i + 1}: ${below}% below, ${inRange}% in range, ${above}% above`;
+          rect.appendChild(title);
+        });
+        if (i % 2 === 0) el("text", { x: x + barW / 2, y: top + height + 16, "text-anchor": "middle" }).textContent = "Day " + (i + 1);
+      });
+    }
+  </script>
 </body>
 </html>

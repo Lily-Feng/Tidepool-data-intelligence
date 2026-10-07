@@ -1,0 +1,26 @@
+resources:
+  schemas:
+    private_raw:
+      catalog_name: ${var.catalog}
+      name: private_raw
+      comment: Landing volume, bronze as received, and current-state record tables. Identifiers present. Restricted; never shared.
+    private_curated:
+      catalog_name: ${var.catalog}
+      name: private_curated
+      comment: Silver. Pseudonymized, typed entities across all sources. Identifiers removed.
+    private_analytics:
+      catalog_name: ${var.catalog}
+      name: private_analytics
+      comment: Gold. Analysis shapes (timeline, daily, event windows, periods) for the dashboard, Genie and notebooks.
+    private_ops:
+      catalog_name: ${var.catalog}
+      name: private_ops
+      comment: Ingest manifests, reconciliation, freshness and conflict counts. No health values.
+
+  volumes:
+    landing:
+      catalog_name: ${var.catalog}
+      schema_name: ${resources.schemas.private_raw.name}
+      name: landing
+      volume_type: MANAGED
+      comment: Ingest batches, one folder per source system (tidepool/, apple_health/, labs/). Immutable; kept for replay.

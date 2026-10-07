@@ -65,9 +65,16 @@ owner, and plan a history rewrite and exposure review.
 
 ## Repo map
 
-- `scripts/` — ingest scripts (run on the owner's Mac); `scripts/git-hooks/`
-- `infra/terraform/` — AWS + Unity Catalog infra (`*.example` files only)
-- `docs/v1/` — earlier V1 specs (AWS/S3-based); see Stage 1 plan decision D1
-- `docs/archive/` — deferred scope
+- `databricks.yml`, `resources/` — bundle (schemas, volume, pipeline, job).
+  Targets: `dev` (synthetic data) and `personal` (real data). Validate with
+  `databricks bundle validate -t dev`; never deploy or run without the owner's OK.
+- `src/ingest/` — runs on the owner's Mac; packages exports, uploads to the volume
+- `src/pipeline/transformations/{bronze,silver,gold,ops}/` — Lakeflow SQL, one dataset per file.
+  Schemas: `private_raw` (bronze, current state), `private_curated` (silver),
+  `private_analytics` (gold), `private_ops` (reconciliation; no health values)
+- `src/synthetic/` — synthetic data generator; the only data allowed in tests
+- `tests/` — `python -m pytest tests`
+- `docs/` — Stage 1 plan, data engineering design, data contract, dashboard spec
+- `scripts/git-hooks/` — pre-commit guard
 - `github-pages/` — public landing page
-- `private/` — git-ignored; see `private/README.md`
+- `private/` — git-ignored; see `private/README.md`. Real exports in `private/raw/`; data profile in `private/data-profile.md`.

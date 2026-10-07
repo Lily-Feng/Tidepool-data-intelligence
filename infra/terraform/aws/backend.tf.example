@@ -1,9 +1,0 @@
-terraform {
-  backend "s3" {
-    bucket       = "REPLACE-WITH-DEDICATED-TERRAFORM-STATE-BUCKET"
-    key          = "tidetrack/dev/aws/terraform.tfstate"
-    region       = "us-west-2"
-    encrypt      = true
-    use_lockfile = true
-  }
-}

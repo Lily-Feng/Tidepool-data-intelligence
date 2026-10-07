@@ -11,13 +11,13 @@ a number and enough days behind it. Phases end at a gate, not a date.
 
 | ID | Decision | Recommendation |
 |---|---|---|
-| D1 | Where real data is processed | **Databricks Free Edition** for Stage 1 personal use, with ingest on the Mac and an encrypted raw copy kept locally. This supersedes the "no real data in Free Edition" rule in `docs/v1/` for personal, non-commercial use; keep the AWS/S3 Terraform as an optional hardened path. Revisit before anyone else's data is involved. |
+| D1 | Where real data is processed | **Decided:** Databricks Free Edition for personal, non-commercial use, with ingest on the Mac and an encrypted raw copy kept locally. The earlier AWS/S3 + Terraform design is in git history (first commit) if a hardened path is needed later. Revisit before anyone else's data is involved. |
 | D2 | First source | Tidepool export backfill first, then the Export API, then Apple Health. |
-| D3 | App surface | AI/BI dashboard + Genie space first; a custom Databricks App only if those fall short. |
+| D3 | App surface | **Decided:** AI/BI dashboard + Genie space first; a custom Databricks App only if those fall short. |
 | D4 | License | Apache-2.0 (patent grant, common for data tooling). |
 | D5 | Public test data | A synthetic data generator in the repo; no real records in fixtures. |
 
-Once D1 is settled, update `docs/v1/` to match so the repo has one source of truth.
+Detailed design: [data-engineering-design.md](data-engineering-design.md); rules in [data-contract.md](data-contract.md) and [dashboard-spec.md](dashboard-spec.md).
 
 ## Phase 0 — Foundations
 
@@ -28,8 +28,8 @@ Build
 - Mac ingest script: Tidepool export (file, then API with token in Keychain) →
   compressed NDJSON + manifest → upload to a Unity Catalog volume via Databricks CLI.
 - Encrypted local raw archive (FileVault + encrypted backup).
-- Unity Catalog: `private_raw`, `private_curated` schemas (and an empty
-  `share_deid` placeholder for Stage 2), explicit grants.
+- Unity Catalog: `private_raw`, `private_curated`, `private_analytics`,
+  `private_ops` schemas, explicit grants.
 - Synthetic data generator producing Tidepool-shaped events for tests and demos.
 
 Gate: 90+ days of Tidepool data loaded; a re-run produces identical tables.
@@ -63,18 +63,17 @@ Build
 
 Gate: the care team finds the clinic report useful in a real visit.
 
-## Proposed repo layout
+## Status
 
-```text
-databricks.yml               # asset bundle
-resources/                   # pipeline, jobs, dashboard, Genie definitions
-src/pipeline/                # bronze/silver/gold SQL
-src/ingest/                  # Mac-side Tidepool + Apple Health ingest
-src/synthetic/               # synthetic data generator
-tests/fixtures/synthetic/    # small synthetic samples only
-infra/terraform/             # optional AWS path (*.example only)
-private/                     # git-ignored
-```
+Done: repo hygiene, bundle (schemas, volume, pipeline, file-arrival job),
+export ingest script, synthetic generator (incl. device events, settings
+snapshots, overlapping windows), bronze + current-state (AUTO CDC) for Tidepool,
+silver for CGM, fingersticks, basal, bolus, carbs, sites, pump events and
+settings history, ops reconciliation/freshness, daily glucose and insulin gold.
+
+Next: first `dev` deploy with two overlapping synthetic windows, then
+`personal` with the real export; Tidepool API collector (watermark + lookback);
+5-minute timeline and event features; AI/BI dashboard; Apple Health ingest.
 
 ## Out of scope for Stage 1
 

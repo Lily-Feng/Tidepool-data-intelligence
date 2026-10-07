@@ -1,0 +1,26 @@
+# Declarative Automation Bundle. Deploy with:
+#   databricks bundle deploy -t dev        # synthetic data, schemas prefixed per user
+#   databricks bundle deploy -t personal   # your real data
+# The workspace is chosen by your CLI profile (--profile); no host is stored here.
+bundle:
+  name: twiistlab
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Unity Catalog catalog to deploy into.
+    default: twiistlab
+  subject_key:
+    description: Pseudonymous subject ID written to curated tables instead of real identifiers.
+    default: subject_001
+
+targets:
+  dev:
+    mode: development
+    default: true
+  personal:
+    mode: production
+    workspace:
+      root_path: ~/.bundle/${bundle.name}/${bundle.target}

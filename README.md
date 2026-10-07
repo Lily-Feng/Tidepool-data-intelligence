@@ -1,65 +1,64 @@
-# TideTrack Studio
+# TwiistLab
 
-A **privacy-first personal analytics tool** that helps diabetes users **get,
-read, and analyze** their Tidepool CGM & insulin data. Not a medical device, not
-a social platform — just clean data, well-engineered, presented clearly.
+A privacy-first personal analytics pipeline for people with type 1 diabetes.
+It joins pump and CGM data (Twiist via Tidepool) — and later Apple Health — in a
+Databricks lakehouse you own, so you can see *why* glucose does what it does.
 
-> **Informational personal analytics only — not medical advice.**
+> **Informational personal analytics only — not medical advice or a dosing
+> recommendation.**
 
-## Core Pipeline
+## How it works
 
+```text
+Tidepool export ──▶ src/ingest (your Mac) ──▶ UC volume  private_raw/landing/<source>/
+                                                   │
+               Lakeflow pipeline (on file arrival) ▼
+               private_raw.tidepool_events_raw      (bronze, as received)
+               private_raw.tidepool_events_current  (latest version of each record)
+               private_curated.*                    (silver, identifiers dropped)
+               private_analytics.daily_*            (gold, TIR / CV / GMI / insulin)
+               private_ops.dq_*                     (reconciliation, freshness)
+                                                   │
+                                                   ▼
+                                     AI/BI dashboard, Genie (planned)
 ```
-Tidepool API → Collector → AWS S3 (encrypted) → Databricks Unity Catalog → Bronze → Silver → Gold → AI/BI App
+
+Your data never goes through this repository. The repo holds code; the ingest
+script uploads data straight from your machine to your own workspace.
+
+## Quick start
+
+Requires the [Databricks CLI](https://docs.databricks.com/dev-tools/cli/) and a
+workspace (Free Edition works for personal use) with a configured profile.
+
+```bash
+# 1. Deploy schemas, volume, pipeline and refresh job
+databricks bundle deploy -t dev            # dev: synthetic data, user-prefixed schemas
+
+# 2. Try it with synthetic data
+python src/synthetic/generate_tidepool.py --days 14 --out /tmp/synthetic.json
+python src/ingest/tidepool_export.py /tmp/synthetic.json --out-dir /tmp/batches --upload \
+    --volume /Volumes/twiistlab/dev_<your-user>_private_raw/landing
+
+# 3. Run the pipeline
+databricks bundle run -t dev tidepool
 ```
 
-| Layer | What It Does |
-|-------|-------------|
-| **Tidepool API → Collector** | Authenticates, pulls CGM/insulin/pump data; packages as NDJSON.gz with checksum + manifest |
-| **S3 (Storage)** | SSE-KMS encryption, versioned, TLS-only, Block Public Access, CloudTrail audit |
-| **Bronze** | Auto Loader streams raw JSON into Delta tables |
-| **Silver** | Deduplicate, normalize units, quarantine bad records, split by event type |
-| **Gold** | 5-min feature buckets, daily summaries, dashboard KPIs |
-| **AI/BI App** | Read-only Databricks App with Overview, Timeline, and Data Quality tabs |
+For your real data, deploy with `-t personal`, keep exports in the git-ignored
+`private/raw/`, and upload with the default `--volume`.
 
-## What is included
+## Repository layout
 
-- `scripts/` — starter ingestion script and secure token pattern
-- `infra/terraform/` — AWS and Unity Catalog infrastructure (ready to `plan/apply`)
-- `docs/v1/` — implementation-ready V1 architecture and specifications
-- `docs/archive/` — deferred scope docs (agentic copilot, Apple Health, extended architecture)
-- `github-pages/` — simple project landing page
+| Path | Contents |
+|---|---|
+| `databricks.yml`, `resources/` | Bundle: schemas, volume, pipeline, daily job |
+| `src/ingest/` | Packages a Tidepool export into a batch and uploads it |
+| `src/pipeline/transformations/` | Bronze / silver / gold SQL, one dataset per file |
+| `src/synthetic/` | Synthetic Tidepool-shaped data for tests and demos |
+| `tests/` | `python -m pytest tests` |
+| `docs/` | Stage 1 plan, data engineering design, data contract, dashboard spec |
 
-## Getting started
+## Contributing safely
 
-1. Read the [V1 specification](docs/v1/README.md).
-2. **Move real Tidepool exports outside this repository** (see Security below).
-3. Provision the private S3 bucket and Unity Catalog via Terraform.
-4. Backfill a protected export, then automate incremental API collection.
-5. Build the Lakeflow Bronze → Silver → Gold pipeline.
-6. Build the read-only AI/BI App against Gold tables.
-7. Publish only code, documentation, schemas, and synthetic fixtures.
-
-## Security
-
-Real personal health data **must not** be committed to Git or stored in
-Databricks Free Edition. Free Edition can be used for synthetic UI and pipeline
-demonstrations. Keep real exports in the encrypted S3 bucket only.
-
-## Workstreams
-
-1. **Connector & Security** — Tidepool auth, collector script, S3 atomic commit, Terraform infra, secrets management
-2. **Data Engineering** — Bronze/Silver/Gold DLT pipelines, deduplication, quarantine, ops tables
-3. **AI/BI App** — Read-only dashboard with Overview, Timeline, and Data Quality tabs
-
-## Deferred (not V1)
-
-Agentic copilot · Apple Health streaming · Knowledge graph · Meal/activity
-response joins · Multi-user tenancy · Predictive models · Mobile app ·
-Write-back/annotations · Genie text-to-SQL
-
-Archived docs for these features are in [`docs/archive/`](docs/archive/).
-
-## Infrastructure quick start
-
-Follow the [Terraform starter guide](infra/terraform/README.md) — it creates no
-resources until you explicitly run `terraform apply`.
+Never commit real health data, identifiers or secrets. Install the guard hook
+once per clone: `git config core.hooksPath scripts/git-hooks`.

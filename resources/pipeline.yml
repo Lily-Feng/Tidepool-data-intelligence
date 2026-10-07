@@ -1,0 +1,38 @@
+resources:
+  pipelines:
+    tidepool:
+      name: twiistlab-pipeline
+      catalog: ${var.catalog}
+      schema: ${resources.schemas.private_curated.name}
+      serverless: true
+      channel: CURRENT
+      root_path: ../src/pipeline
+      libraries:
+        - glob:
+            include: ../src/pipeline/transformations/**
+      configuration:
+        # Local days are derived as UTC + per-event offset; pin the session zone so
+        # to_date() on those wall-clock timestamps never shifts.
+        spark.sql.session.timeZone: UTC
+        catalog: ${var.catalog}
+        raw_schema: ${resources.schemas.private_raw.name}
+        analytics_schema: ${resources.schemas.private_analytics.name}
+        ops_schema: ${resources.schemas.private_ops.name}
+        landing_root: /Volumes/${var.catalog}/${resources.schemas.private_raw.name}/${resources.volumes.landing.name}
+        subject_key: ${var.subject_key}
+
+  jobs:
+    refresh:
+      name: twiistlab-refresh
+      # Runs when a new batch lands in the volume (any source), at most hourly.
+      # Development-mode targets deploy triggers paused.
+      trigger:
+        pause_status: UNPAUSED
+        file_arrival:
+          url: /Volumes/${var.catalog}/${resources.schemas.private_raw.name}/${resources.volumes.landing.name}/
+          min_time_between_triggers_seconds: 3600
+          wait_after_last_change_seconds: 300
+      tasks:
+        - task_key: refresh
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.tidepool.id}
