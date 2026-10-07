@@ -1,11 +1,26 @@
-# TwiistLab
+# Tidepool Data Intelligence
 
-A privacy-first personal analytics pipeline for people with type 1 diabetes.
-It joins pump and CGM data (Twiist via Tidepool) — and later Apple Health — in a
-Databricks lakehouse you own, so you can see *why* glucose does what it does.
+Private, open-source analytics for people living with type 1 diabetes.
+**Site:** https://lily-feng.github.io/Tidepool-data-intelligence/
+
+## Mission
+
+A pump and CGM record hundreds of data points a day, but most of it is only ever
+scrolled past. This project turns that history into answers about *why* glucose
+does what it does, without giving the data to anyone:
+
+- **Your data, your workspace.** Pump and CGM history (twiist via Tidepool),
+  later Apple Health and lab results, goes from your own computer into a
+  Databricks workspace you control. Nothing passes through this project.
+- **Questions over months, not minutes.** What moves time in range? Did a
+  settings change help? Why was last night rough? Does sleep or exercise change
+  the next day?
+- **Describe, never prescribe.** Insights describe your own history and point
+  you to your care team. No dosing advice, no alerts, no writing back to devices.
 
 > **Informational personal analytics only — not medical advice or a dosing
-> recommendation.**
+> recommendation.** An independent project, not affiliated with Tidepool, the
+> maker of twiist, or Databricks.
 
 ## How it works
 
@@ -51,12 +66,13 @@ For your real data, deploy with `-t personal`, keep exports in the git-ignored
 
 | Path | Contents |
 |---|---|
-| `databricks.yml`, `resources/` | Bundle: schemas, volume, pipeline, daily job |
+| `databricks.yml`, `resources/` | Bundle: schemas, volume, pipeline, refresh job |
 | `src/ingest/` | Packages a Tidepool export into a batch and uploads it |
 | `src/pipeline/transformations/` | Bronze / silver / gold SQL, one dataset per file |
 | `src/synthetic/` | Synthetic Tidepool-shaped data for tests and demos |
 | `tests/` | `python -m pytest tests` |
 | `docs/` | Stage 1 plan, data engineering design, data contract, dashboard spec |
+| `github-pages/` | Project site, published by `.github/workflows/pages.yml` |
 
 ## Contributing safely
 
