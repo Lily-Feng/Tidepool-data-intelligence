@@ -54,6 +54,10 @@ Gate: three findings the owner did not know, each with a number and days of evid
 
 ## Phase 2 — AI analyst
 
+Detailed design: [phase2-plan.md](phase2-plan.md) (dimensional gold in PySpark,
+governance as code, CI/CD, metric views and Genie, descriptive ML, a public
+knowledge base, and the AI analyst app).
+
 Build
 - Genie space over gold tables only.
 - Weekly AI-written summary via `ai_query` on a workspace-hosted model (aggregates
