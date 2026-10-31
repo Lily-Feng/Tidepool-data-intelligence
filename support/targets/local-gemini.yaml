@@ -1,0 +1,7 @@
+# Development on your Mac with the live Gemini API. The key comes from Keychain:
+#   python -m keyring set tidy gemini-api-key
+extends: _gemini
+secrets:
+  adapter: local.keychain
+events:
+  adapter: local.in_process

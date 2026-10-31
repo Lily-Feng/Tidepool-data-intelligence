@@ -22,7 +22,7 @@ while IFS= read -r f; do
 done <<< "$staged"
 
 # 2. Content patterns: device serials, tokens, keys
-patterns='twiist_[0-9]{6,}|AKIA[0-9A-Z]{16}|dapi[0-9a-f]{32}|x-tidepool-session-token: *[A-Za-z0-9]|-----BEGIN [A-Z ]*PRIVATE KEY-----'
+patterns='twiist_[0-9]{6,}|AIza[0-9A-Za-z_-]{35}|AKIA[0-9A-Z]{16}|dapi[0-9a-f]{32}|x-tidepool-session-token: *[A-Za-z0-9]|-----BEGIN [A-Z ]*PRIVATE KEY-----'
 hits=$(git diff --cached -U0 --diff-filter=ACMR -- . ':(exclude)scripts/git-hooks/*' \
        | grep -E '^\+' | grep -nE "$patterns" || true)
 if [ -n "$hits" ]; then

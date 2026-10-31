@@ -1,0 +1,9 @@
+# Default target: no network, no credentials. Every test runs here.
+llm:
+  adapter: local.replay
+  recordings: support/eval/recordings/default.jsonl
+  mode: replay
+secrets:
+  adapter: local.env
+events:
+  adapter: local.in_process

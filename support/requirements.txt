@@ -1,0 +1,4 @@
+# Core runtime: platform-neutral. No cloud SDKs here.
+fastapi>=0.110
+uvicorn>=0.29
+pyyaml>=6.0

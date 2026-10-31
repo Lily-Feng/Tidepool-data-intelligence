@@ -73,6 +73,9 @@ owner, and plan a history rewrite and exposure review.
   Schemas: `private_raw` (bronze, current state), `private_curated` (silver),
   `private_analytics` (gold), `private_ops` (reconciliation; no health values)
 - `src/synthetic/` — synthetic data generator; the only data allowed in tests
+- `support/` — Tidy, a support-agent prototype on GCP (synthetic data only;
+  ports and adapters, cloud SDKs only under `support/adapters/<cloud>/`).
+  Tests: `python -m pytest tests/support`. Never deploy without the owner's OK.
 - `tests/` — `python -m pytest tests`
 - `docs/` — Stage 1 plan, data engineering design, data contract, dashboard spec
 - `scripts/git-hooks/` — pre-commit guard

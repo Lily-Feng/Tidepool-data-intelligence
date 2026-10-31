@@ -1,0 +1,16 @@
+# Shared Gemini settings (free tier, Google AI Studio key). Not a target itself.
+# Limits are client-side and sit below the published free-tier quota
+# (observed 2026-10-30): Flash Lite models 15 RPM / 500 RPD, Flash models 5 RPM / 20 RPD.
+# Model IDs must match `python -m support.scripts.check_gemini_limits` output.
+llm:
+  adapter: gcp.gemini
+  api_key_secret: gemini-api-key
+  models:
+    gemini-3.5-flash-lite: {rpm: 12, rpd: 500, reserve: 50}
+    gemini-3.1-flash-lite: {rpm: 12, rpd: 500, reserve: 50}
+    gemini-3.8-flash: {rpm: 4, rpd: 20, reserve: 2}
+    gemini-3.6-flash: {rpm: 4, rpd: 20, reserve: 2}
+  roles:
+    agent: {model: gemini-3.5-flash-lite, fallback: gemini-3.1-flash-lite}
+    support: {model: gemini-3.1-flash-lite}
+    judge: {model: gemini-3.8-flash, fallback: gemini-3.6-flash}

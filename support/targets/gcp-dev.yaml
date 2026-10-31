@@ -1,0 +1,10 @@
+# Deployed on Cloud Run. Identifiers come from the environment, never this file.
+extends: _gemini
+gcp:
+  project: ${TIDY_GCP_PROJECT}
+  region: us-west1
+secrets:
+  adapter: gcp.secret_manager
+  project: ${TIDY_GCP_PROJECT}
+events:
+  adapter: local.in_process  # Pub/Sub adapter lands in Phase 2

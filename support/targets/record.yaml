@@ -1,0 +1,11 @@
+# Records live Gemini exchanges (via local-gemini) into the replay file CI uses.
+# Synthetic prompts only. Review the new lines before committing them.
+llm:
+  adapter: local.replay
+  recordings: support/eval/recordings/default.jsonl
+  mode: record
+  inner_target: local-gemini
+secrets:
+  adapter: local.keychain
+events:
+  adapter: local.in_process
