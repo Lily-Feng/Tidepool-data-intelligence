@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Runs the Tidepool sync every 6 hours. If the Mac is asleep at the scheduled
+  time, launchd runs it once on wake.
+
+  Install:
+    sed "s#REPO_DIR#$PWD#g; s#PYTHON#$(which python3)#g" \
+      scripts/launchd/org.twiistlab.tidepool-sync.plist.example \
+      > ~/Library/LaunchAgents/org.twiistlab.tidepool-sync.plist
+    launchctl load ~/Library/LaunchAgents/org.twiistlab.tidepool-sync.plist
+  Run now:   launchctl start org.twiistlab.tidepool-sync
+  Remove:    launchctl unload ~/Library/LaunchAgents/org.twiistlab.tidepool-sync.plist
+
+  Logs go to private/state/ (git-ignored). Add <string>--upload</string> and
+  a profile to ProgramArguments once local runs look right.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>org.twiistlab.tidepool-sync</string>
+  <key>WorkingDirectory</key>
+  <string>REPO_DIR</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>PYTHON</string>
+    <string>src/ingest/tidepool_sync.py</string>
+  </array>
+  <key>StartInterval</key>
+  <integer>21600</integer>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>REPO_DIR/private/state/tidepool-sync.log</string>
+  <key>StandardErrorPath</key>
+  <string>REPO_DIR/private/state/tidepool-sync.log</string>
+</dict>
+</plist>
