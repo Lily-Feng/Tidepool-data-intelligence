@@ -1,0 +1,25 @@
+{
+  "name": "t1d-advisor",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "check": "npx tsc --checkJs --noEmit --skipLibCheck --esModuleInterop --target esnext --module nodenext --moduleResolution nodenext app.js",
+    "start": "node app.js",
+    "lint": "npx @biomejs/biome check .",
+    "lint:fix": "npx @biomejs/biome check --write .",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@openai/agents": "^0.21.0",
+    "@slack/bolt": "^5.1.0",
+    "dotenv": "~18.0.9",
+    "openai": "^7.54.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.4",
+    "@slack/cli-hooks": "^2.0.0",
+    "typescript": "^7.0.2"
+  }
+}
