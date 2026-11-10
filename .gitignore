@@ -46,3 +46,8 @@ build/
 .ipynb_checkpoints/
 .vscode/
 tidepool-session.json
+
+# Slack apps: CLI app/team IDs and OAuth installation store (holds user/bot tokens)
+**/.slack/apps*.json
+**/.slack/cache/
+**/data/installations/

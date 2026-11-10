@@ -11,8 +11,8 @@ staged=$(git diff --cached --name-only --diff-filter=ACMR)
 # 1. Forbidden paths and file types
 while IFS= read -r f; do
   case "$f" in
-    private/*|data/*|*.tfstate|*.tfstate.*|*terraform.tfvars|*/backend.tf|.env|.env.*|*.pem|*.key|*TidepoolExport*|*export.xml)
-      [ "$f" = ".env.example" ] && continue
+    private/*|data/*|*/data/*|*.tfstate|*.tfstate.*|*terraform.tfvars|*/backend.tf|.env|.env.*|*/.env|*/.env.*|*.pem|*.key|*TidepoolExport*|*export.xml|*/.slack/apps*.json|.slack/apps*.json)
+      case "$f" in .env.example|*/.env.example|.env.sample|*/.env.sample) continue ;; esac
       echo "BLOCKED path: $f"; fail=1 ;;
   esac
   # Real data files are big; synthetic fixtures should stay small.
@@ -22,7 +22,7 @@ while IFS= read -r f; do
 done <<< "$staged"
 
 # 2. Content patterns: device serials, tokens, keys
-patterns='twiist_[0-9]{6,}|AIza[0-9A-Za-z_-]{35}|AKIA[0-9A-Z]{16}|dapi[0-9a-f]{32}|x-tidepool-session-token: *[A-Za-z0-9]|-----BEGIN [A-Z ]*PRIVATE KEY-----'
+patterns='twiist_[0-9]{6,}|AIza[0-9A-Za-z_-]{35}|AKIA[0-9A-Z]{16}|dapi[0-9a-f]{32}|x-tidepool-session-token: *[A-Za-z0-9]|-----BEGIN [A-Z ]*PRIVATE KEY-----|xox[abposre]-[0-9A-Za-z-]{10,}|xapp-[0-9]-[0-9A-Za-z-]{10,}|sk-ant-[0-9A-Za-z_-]{20,}|hooks\.slack\.com/services/T[0-9A-Z]+'
 hits=$(git diff --cached -U0 --diff-filter=ACMR -- . ':(exclude)scripts/git-hooks/*' \
        | grep -E '^\+' | grep -nE "$patterns" || true)
 if [ -n "$hits" ]; then
