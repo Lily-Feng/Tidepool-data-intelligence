@@ -1,0 +1,30 @@
+[Unit]
+Description=T1D-Advisor Slack agent (Socket Mode)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=t1d-advisor
+Group=t1d-advisor
+WorkingDirectory=/opt/t1d-advisor
+Environment=NODE_ENV=production
+Environment=LOG_LEVEL=info
+ExecStart=/usr/local/bin/node /opt/t1d-advisor/infra/vm/start.mjs
+Restart=always
+RestartSec=10
+MemoryMax=600M
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

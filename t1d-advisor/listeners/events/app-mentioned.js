@@ -57,7 +57,7 @@ export async function handleAppMentioned({ client, context, event, logger, say, 
   } catch (e) {
     logger.error(`Failed to handle app mention: ${e}`);
     await say({
-      text: `:warning: Something went wrong! (${e})`,
+      text: ':warning: Something went wrong. Please try again in a moment.',
       thread_ts: event.thread_ts || event.ts,
     });
   }

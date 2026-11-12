@@ -2,11 +2,13 @@ import 'dotenv/config';
 
 import { readFileSync } from 'node:fs';
 
-import { App, LogLevel } from '@slack/bolt';
+import { App } from '@slack/bolt';
 import pkg from '@slack/oauth';
 
 const { FileInstallationStore } = pkg;
 
+import { resolveLogLevel } from './config/log-level.js';
+import { stopOnSignals } from './config/shutdown.js';
 import { registerListeners } from './listeners/index.js';
 
 const manifest = JSON.parse(readFileSync('manifest.json', 'utf-8'));
@@ -41,7 +43,7 @@ const installationStore = {
 };
 
 const app = new App({
-  logLevel: LogLevel.DEBUG,
+  logLevel: resolveLogLevel(process.env.LOG_LEVEL),
   signingSecret: process.env.SLACK_SIGNING_SECRET,
   ignoreSelf: false,
   clientId: process.env.SLACK_CLIENT_ID,
@@ -56,6 +58,7 @@ const app = new App({
 });
 
 registerListeners(app);
+stopOnSignals(app);
 
 (async () => {
   const port = Number.parseInt(process.env.PORT || '3000', 10);
